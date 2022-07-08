@@ -102,10 +102,10 @@
 -- 
 -- ```
 -- 1- Selezionare i dati di tutti giocatori che hanno scritto almeno una recensione, mostrandoli una sola volta (996)
-	select players.*
+	select player_id
 	from reviews 
 	inner join players on players.id=player_id
-	--Da rivedere
+	group by player_id
 
 -- 2- Sezionare tutti i videogame dei tornei tenuti nel 2016, mostrandoli una sola volta (226)
 	select *
@@ -121,23 +121,60 @@
 
 -- 
 -- 4- Selezionare i dati di tutte le software house che hanno rilasciato almeno un gioco dopo il 2020, mostrandoli una sola volta (6)
-	select software_houses.*, videogames.release_date
+	select software_houses.name
 	from software_houses
 	inner join videogames on software_house_id=videogames.software_house_id
 	where year(release_date)>'2020'
--- da rivedere	
+	group by software_houses.name
 
 
 -- 5- Selezionare i premi ricevuti da ogni software house per i videogiochi che ha prodotto (55)
+	select award_id, software_houses.name as software_house_name, videogames.name as videogame_name
+	from award_videogame
+	inner join videogames on videogames.id = videogame_id
+	inner join software_houses on videogames.software_house_id = software_houses.id
+	order by software_house_name;
 	
 -- 6- Selezionare categorie e classificazioni PEGI dei videogiochi che hanno ricevuto recensioni da 4 e 5 stelle, mostrandole una sola volta (3363)
--- 
+	select videogames.name , categories.name , p.name
+	from reviews
+	inner join videogames on videogame_id=videogames.id
+	inner join category_videogame c_v on videogames.id = c_v.videogame_id
+	inner join categories on categories.id = c_v.category_id
+	inner join pegi_label_videogame p_v on videogames.id=p_v.videogame_id
+	inner join pegi_labels p on p.id = p_v.pegi_label_id
+	where reviews.rating>=4 and reviews.rating<=5
+	group by videogames.name , categories.name , p.name;
+
 -- 7- Selezionare quali giochi erano presenti nei tornei nei quali hanno partecipato i giocatori il cui nome inizia per 'S' (474)
--- 
+	select distinct vg.id, vg.name
+	from players p
+	inner join player_tournament p_tt on p.id = p_t.player_id
+	inner join tournaments t on t.id = p_t.tournament_id
+	inner join tournament_videogame t_v on t.id = t_v.tournament_id
+	inner join videogames vg on vg.id= tvg.videogame_id
+	where p.name LIKE 'S%';
+
 -- 8- Selezionare le città in cui è stato giocato il gioco dell'anno del 2018 (36)
--- 
+	select t.city
+	from tournaments t
+	inner join tournament_videogame t_v ON t.id = t_v.tournament_id
+	inner join videogames vg ON vg.id = t_v.videogame_id
+	inner join award_videogame a_v ON vg.id = a_v.videogame_id
+	inner join awards aw ON aw.id = a_v.award_id
+	where datepart(year, vg.release_date) = '2018'
+	and aw.name = 'Gioco dell''anno';
+
 -- 9- Selezionare i giocatori che hanno giocato al gioco più atteso del 2018 in un torneo del 2019 (3306)
--- 
+	select players.*
+	from players
+	inner join player_tournament p_t ON players.id = p_t.player_id
+	inner join tournaments ON p_t.tournament_id = tournaments.id
+	inner join tournament_videogame t_v ON tournaments.id = t_v.tournament_id
+	inner join videogames ON t_v.videogame_id = videogames.id
+	inner join award_videogame a_v ON videogames.id = a_v.videogame_id
+	inner join awards ON a_v.award_id = awards.id
+	where awards.name = 'Gioco più atteso' AND year(videogames.release_date) = 2018 AND tournaments.year = 2019;
 -- *********** BONUS ***********
 -- 
 -- 10- Selezionare i dati della prima software house che ha rilasciato un gioco, assieme ai dati del gioco stesso (software house id : 5)
